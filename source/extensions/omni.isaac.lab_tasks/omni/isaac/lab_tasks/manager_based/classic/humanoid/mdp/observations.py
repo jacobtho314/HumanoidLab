@@ -73,3 +73,18 @@ def base_angle_to_target(
     angle_to_target = torch.atan2(torch.sin(angle_to_target), torch.cos(angle_to_target))
 
     return angle_to_target.unsqueeze(-1)
+
+def ball_position_(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("ball")) -> torch.Tensor:
+    """Returns the x,y ball position in the simulation world frame.
+    
+    Args:
+        env: The environment instance.
+        asset_cfg: Configuration for the ball entity.
+        
+    Returns:
+        torch.Tensor: Ball position in world frame with shape (num_envs, 3).
+    """
+    # extract the used quantities (to enable type-hinting)
+    ball = env.scene[asset_cfg.name]
+    # get ball position in world frame
+    return ball.data.root_pos_w[:, :2]

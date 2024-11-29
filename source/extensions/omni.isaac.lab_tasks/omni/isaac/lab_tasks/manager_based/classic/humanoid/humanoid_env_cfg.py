@@ -17,13 +17,13 @@ from omni.isaac.lab.scene import InteractiveSceneCfg
 from omni.isaac.lab.terrains import TerrainImporterCfg
 from omni.isaac.lab.utils import configclass
 from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR
+from omni.isaac.lab.assets.rigid_object.rigid_object_cfg import RigidObjectCfg
 
 import omni.isaac.lab_tasks.manager_based.classic.humanoid.mdp as mdp
 
 ##
 # Scene definition
 ##
-
 
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
@@ -89,6 +89,32 @@ class MySceneCfg(InteractiveSceneCfg):
             ),
         },
     )
+
+    ball = RigidObjectCfg(
+    prim_path="{ENV_REGEX_NS}/ball",
+    spawn=sim_utils.SphereCfg(
+        radius=0.15,  # radius of the sphere in meters
+        rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            disable_gravity=False,
+        ),
+        mass_props=sim_utils.MassPropertiesCfg(
+            mass=1.0
+        ),
+        collision_props=sim_utils.CollisionPropertiesCfg(),
+
+        physics_material=sim_utils.RigidBodyMaterialCfg(
+            static_friction=0.5,
+            dynamic_friction=0.5,
+            restitution=0.5,
+        ),
+    ),
+    init_state=RigidObjectCfg.InitialStateCfg(
+        pos=(2.0, 0.0, 0.4),
+        rot=(1.0, 0.0, 0.0, 0.0),
+        lin_vel=(0.0, 0.0, 0.0),
+        ang_vel=(0.0, 0.0, 0.0),
+    ),
+)
 
     # lights
     light = AssetBaseCfg(
@@ -171,6 +197,16 @@ class EventCfg:
         params={
             "position_range": (-0.2, 0.2),
             "velocity_range": (-0.1, 0.1),
+        },
+    )
+
+    reset_ball = EventTerm(
+        func=mdp.reset_root_state_uniform,  # Same function used for object reset in inhand example
+        mode="reset",
+        params={
+            "pose_range": {},
+            "velocity_range": {},
+            "asset_cfg": SceneEntityCfg("ball")  # Reference to your ball object
         },
     )
 

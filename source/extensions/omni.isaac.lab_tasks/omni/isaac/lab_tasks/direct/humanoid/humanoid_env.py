@@ -44,6 +44,7 @@ class HumanoidEnvCfg(DirectRLEnvCfg):
         debug_vis=False,
     )
 
+
     # scene
     scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=4096, env_spacing=4.0, replicate_physics=True)
 
