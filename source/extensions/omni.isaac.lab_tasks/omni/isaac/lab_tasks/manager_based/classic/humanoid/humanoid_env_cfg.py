@@ -101,7 +101,9 @@ class MySceneCfg(InteractiveSceneCfg):
             mass=1.0
         ),
         collision_props=sim_utils.CollisionPropertiesCfg(),
-
+        visual_material=sim_utils.PreviewSurfaceCfg(
+                diffuse_color=(0.0, 1.0, 0.0)
+        ),
         physics_material=sim_utils.RigidBodyMaterialCfg(
             static_friction=0.5,
             dynamic_friction=0.5,
@@ -115,11 +117,32 @@ class MySceneCfg(InteractiveSceneCfg):
         ang_vel=(0.0, 0.0, 0.0),
     ),
 )
+    
+    cube = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/cube",
+        spawn=sim_utils.CuboidCfg(
+            size=(1, 1, 1),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            disable_gravity=True,
+            ),
+            collision_props=sim_utils.CollisionPropertiesCfg(
+                collision_enabled=False
+            ),
+
+            visual_material=sim_utils.PreviewSurfaceCfg(
+                diffuse_color=(1.0, 0.0, 0.0)
+            ),
+        ),
+        # Set initial position
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=(10.0, 0.0, .5)
+        ),
+    )
 
     # lights
     light = AssetBaseCfg(
         prim_path="/World/light",
-        spawn=sim_utils.DistantLightCfg(color=(0.75, 0.75, 0.75), intensity=3000.0),
+        spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), intensity=3000.0),
     )
 
 
@@ -206,7 +229,21 @@ class EventCfg:
         params={
             "pose_range": {},
             "velocity_range": {},
-            "asset_cfg": SceneEntityCfg("ball")  # Reference to your ball object
+            "asset_cfg": SceneEntityCfg("ball")
+        },
+    )
+
+    reset_cube = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "pose_range": {
+            'x': (0.0, 0.0),  # Allow x to vary between -1 and 1
+            'y': (-3.0, 3.0),  # Allow y to vary between -1 and 1
+            'z': (0.0, 0.0)    # Fix z position
+        },
+            "velocity_range": {},
+            "asset_cfg": SceneEntityCfg("cube")
         },
     )
 
