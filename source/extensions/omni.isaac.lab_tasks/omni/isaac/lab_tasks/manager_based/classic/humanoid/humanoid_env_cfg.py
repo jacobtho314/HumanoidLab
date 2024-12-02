@@ -25,6 +25,16 @@ import omni.isaac.lab_tasks.manager_based.classic.humanoid.mdp as mdp
 # Scene definition
 ##
 
+def ball_initial_pos():
+    """Base location for the ball to spawn."""
+    return 1.0, 0.0, 0.4
+
+def target_pos_from_ball():
+    """Promote movement towards the general area of the ball."""
+    tgt = *ball_initial_pos()[:2], 0.0
+    assert len(tgt) == 3
+    return tgt
+
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
     """Configuration for the terrain scene with a humanoid robot."""
@@ -111,7 +121,7 @@ class MySceneCfg(InteractiveSceneCfg):
         ),
     ),
     init_state=RigidObjectCfg.InitialStateCfg(
-        pos=(2.0, 0.0, 0.4),
+        pos=ball_initial_pos(),
         rot=(1.0, 0.0, 0.0, 0.0),
         lin_vel=(0.0, 0.0, 0.0),
         ang_vel=(0.0, 0.0, 0.0),
@@ -121,7 +131,7 @@ class MySceneCfg(InteractiveSceneCfg):
     cube = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/cube",
         spawn=sim_utils.CuboidCfg(
-            size=(1, 1, 1),
+            size=(.2, .2, .2),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=True,
             ),
@@ -135,7 +145,8 @@ class MySceneCfg(InteractiveSceneCfg):
         ),
         # Set initial position
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=(10.0, 0.0, .5)
+            # Initial Z should be the same as z-dim size.
+            pos=(2.0, 0.0, 0.2)
         ),
     )
 
@@ -238,8 +249,10 @@ class EventCfg:
         mode="reset",
         params={
             "pose_range": {
-            'x': (0.0, 0.0),  # Allow x to vary between -1 and 1
-            'y': (-3.0, 3.0),  # Allow y to vary between -1 and 1
+            # These are applied on top of the base pose.
+            # TODO: test with varying pos (non-zero low - high)
+            'x': (0.0, 0.0),
+            'y': (0.0, 0.0),
             'z': (0.0, 0.0)    # Fix z position
         },
             "velocity_range": {},
@@ -253,15 +266,22 @@ class RewardsCfg:
     """Reward terms for the MDP."""
 
     # (1) Reward for moving forward
-    progress = RewTerm(func=mdp.progress_reward, weight=1.0, params={"target_pos": (1000.0, 0.0, 0.0)})
+    # TODO - can we have a reward that promotes movement towards the ball but does not
+    #        penalize kicking the ball?
+    progress = RewTerm(func=mdp.progress_reward, weight=1.0, params={"target_pos": target_pos_from_ball()})
+
     # (2) Stay alive bonus
     alive = RewTerm(func=mdp.is_alive, weight=2.0)
     # (3) Reward for non-upright posture
     upright = RewTerm(func=mdp.upright_posture_bonus, weight=0.1, params={"threshold": 0.93})
+
     # (4) Reward for moving in the right direction
+    # TODO - IIUC, this promotes a heading which is aligned with the vector to the target.
+    #        Again, setting the ball as the target might penalize kicking the ball.
     move_to_target = RewTerm(
-        func=mdp.move_to_target_bonus, weight=0.5, params={"threshold": 0.8, "target_pos": (1000.0, 0.0, 0.0)}
+        func=mdp.move_to_target_bonus, weight=0.5, params={"threshold": 0.8, "target_pos": target_pos_from_ball()}
     )
+
     # (5) Penalty for large action commands
     action_l2 = RewTerm(func=mdp.action_l2, weight=-0.01)
     # (6) Penalty for energy consumption
@@ -301,6 +321,8 @@ class RewardsCfg:
             },
         },
     )
+
+    ball_location = RewTerm(func=mdp.ball_location_reward, weight=4.0, params={})
 
 
 @configclass

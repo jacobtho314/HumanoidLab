@@ -82,9 +82,25 @@ def ball_position_(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntity
         asset_cfg: Configuration for the ball entity.
         
     Returns:
-        torch.Tensor: Ball position in world frame with shape (num_envs, 3).
+        torch.Tensor: Ball position in world frame with shape (num_envs, 2).
     """
     # extract the used quantities (to enable type-hinting)
     ball = env.scene[asset_cfg.name]
     # get ball position in world frame
     return ball.data.root_pos_w[:, :2]
+
+
+def cube_position_(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("cube")) -> torch.Tensor:
+    """Returns the x,y cube position in the simulation world frame.
+
+    Args:
+        env: The environment instance.
+        asset_cfg: Configuration for the ball entity.
+
+    Returns:
+        torch.Tensor: Cube position in world frame with shape (num_envs, 2).
+    """
+    # extract the used quantities (to enable type-hinting)
+    cube = env.scene[asset_cfg.name]
+    # get cube position in world frame
+    return cube.data.root_pos_w[:, :2]

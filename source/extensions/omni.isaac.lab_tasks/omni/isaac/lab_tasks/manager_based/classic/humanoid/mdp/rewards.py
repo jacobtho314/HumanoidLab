@@ -135,3 +135,46 @@ class power_consumption(ManagerTermBase):
         asset: Articulation = env.scene[asset_cfg.name]
         # return power = torque * velocity (here actions: joint torques)
         return torch.sum(torch.abs(env.action_manager.action * asset.data.joint_vel * self.gear_ratio_scaled), dim=-1)
+
+
+class ball_location_reward(ManagerTermBase):
+    """Reward for moving the ball towards the target.
+
+    Rather than a flat reward based on the distance of the ball to the target, this is based on the delta in the ball's
+    position between steps.
+    """
+
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        # initialize the base class
+        super().__init__(cfg, env)
+        # create history buffer
+        self.potentials = torch.zeros(env.num_envs, device=env.device)
+        self.prev_potentials = torch.zeros_like(self.potentials)
+
+    def reset(self, env_ids: torch.Tensor):
+        target_pos = obs.cube_position_(self._env)[env_ids]
+        current_pos = obs.ball_position_(self._env)[env_ids]
+        to_target_pos = target_pos - current_pos
+        self.potentials[env_ids] = -torch.norm(to_target_pos, p=2, dim=-1) / self._env.step_dt
+        self.prev_potentials[env_ids] = self.potentials[env_ids]
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+        target_pos = obs.cube_position_(env)
+        current_pos = obs.ball_position_(env)
+        to_target_pos = target_pos - current_pos
+
+        # update history buffer and compute new potential
+        self.prev_potentials[:] = self.potentials[:]
+        self.potentials[:] = -torch.norm(to_target_pos, p=2, dim=-1) / env.step_dt
+        rew = self.potentials - self.prev_potentials
+
+        # print("target/current/rew")
+        # print(target_pos.cpu().numpy())
+        # print(current_pos.cpu().numpy())
+        # print(rew.cpu().numpy())
+
+        return rew
