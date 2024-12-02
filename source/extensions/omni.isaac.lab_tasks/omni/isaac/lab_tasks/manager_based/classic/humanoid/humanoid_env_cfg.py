@@ -31,9 +31,10 @@ def ball_initial_pos():
 
 def target_pos_from_ball():
     """Promote movement towards the general area of the ball."""
-    tgt = *ball_initial_pos()[:2], 0.0
-    assert len(tgt) == 3
-    return tgt
+    # tgt = *ball_initial_pos()[:2], 0.0
+    # assert len(tgt) == 3
+    # return tgt
+    return 2.0, 0.0, 0.0
 
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
@@ -322,7 +323,7 @@ class RewardsCfg:
         },
     )
 
-    ball_location = RewTerm(func=mdp.ball_location_reward, weight=4.0, params={})
+    ball_location = RewTerm(func=mdp.ball_location_reward, weight=10.0, params={})
 
 
 @configclass
