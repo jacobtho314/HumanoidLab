@@ -230,6 +230,8 @@ class ObservationsCfg:
             params={"asset_cfg": SceneEntityCfg("robot", body_names=["left_foot", "right_foot"])},
         )
         actions = ObsTerm(func=mdp.last_action)
+        ball = ObsTerm(func=mdp.rel_ball_position_)
+        cube = ObsTerm(func=mdp.rel_cube_position_)
 
         def __post_init__(self):
             self.enable_corruption = False
