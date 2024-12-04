@@ -51,41 +51,56 @@ class ICM(nn.Module):
         self.feature_encoder = ICMFeatureEncoder(input_dim, feature_dim).to(device)
         self.forward_model = ICMForwardModel(feature_dim, action_dim).to(device)
         self.inverse_model = ICMInverseModel(feature_dim, action_dim).to(device)
+        self.feature_encoder.train()
+        self.forward_model.train()
+        self.inverse_model.train()
         self.beta = beta
         self.device = device
-        
-        # Add gradient accumulation
-        self.grad_accumulation_steps = 0
-        self.max_grad_accumulation = 10
+
+        print(input())
         
     def reset(self):
         """Reset accumulated gradients"""
-        self.grad_accumulation_steps = 0
-        
-    def compute_intrinsic_reward(self, obs, next_obs, actions):
-        # Input validation
-        # if not (obs.device == next_obs.device == actions.device == self.device):
-        #     raise ValueError("All tensors must be on the same device")
-        # if not (obs.size(0) == next_obs.size(0) == actions.size(0)):
-        #     raise ValueError("Batch sizes must match")
+        pass
             
+    def compute_intrinsic_reward(self, obs, next_obs, actions):
         # Encode states into features
         current_features = self.feature_encoder(obs)
+        print("current_features.requires_grad:", current_features.requires_grad)
+
         next_features = self.feature_encoder(next_obs)
-        
+        print("next_features.requires_grad:", next_features.requires_grad)
+
         # Forward model prediction
         predicted_next_features = self.forward_model(current_features, actions)
-        
+        print("predicted_next_features.requires_grad:", predicted_next_features.requires_grad)
+
         # Compute forward model loss (intrinsic reward)
         forward_loss = F.mse_loss(predicted_next_features, next_features, reduction='none')
+        print("forward_loss.requires_grad:", forward_loss.requires_grad)
+
         intrinsic_reward = torch.mean(forward_loss, dim=-1)
-        
+        print("intrinsic_reward.requires_grad:", intrinsic_reward.requires_grad)
+
         # Inverse model prediction
         predicted_actions = self.inverse_model(current_features, next_features)
+        print("predicted_actions.requires_grad:", predicted_actions.requires_grad)
+
         inverse_loss = F.mse_loss(predicted_actions, actions, reduction='none')
+        print("inverse_loss.requires_grad:", inverse_loss.requires_grad)
+
         inverse_loss = torch.mean(inverse_loss, dim=-1)
-        
+        print("inverse_loss_mean.requires_grad:", inverse_loss.requires_grad)
+
         # Total loss for training
-        total_loss = (1 - self.beta) * inverse_loss + self.beta * forward_loss.mean(-1)
-        
+        total_loss = (1 - self.beta) * inverse_loss + self.beta * torch.mean(forward_loss, dim=-1)
+        print("total_loss.requires_grad:", total_loss.requires_grad)
+
+        # Test gradient flow explicitly
+        try:
+            grads = torch.autograd.grad(outputs=total_loss.mean(), inputs=list(self.parameters()), retain_graph=True)
+            print("Gradient computation successful for total_loss!")
+        except RuntimeError as e:
+            print("Gradient computation failed:", e)
+
         return intrinsic_reward, total_loss

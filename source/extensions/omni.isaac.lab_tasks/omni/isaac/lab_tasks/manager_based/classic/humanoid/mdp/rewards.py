@@ -205,10 +205,12 @@ class icm_reward(ManagerTermBase):
 
     def reset(self, env_ids=None):
         """Reset ICM state for specified environments"""
-        if self.icm is not None:
-            self.icm.reset()
-
-        self.current_obs = None
+        if env_ids is None:
+            self.current_obs = None
+        else:
+            # Only reset specified environments
+            if self.current_obs is not None:
+                self.current_obs[env_ids] = self._env.observation_manager.compute_group("policy")[env_ids]
         
     def __call__(self, env: ManagerBasedRLEnv) -> torch.Tensor:
         # Lazy initialization of ICM
@@ -217,28 +219,25 @@ class icm_reward(ManagerTermBase):
 
         if self.current_obs is None:
             self.current_obs = env.observation_manager.compute_group("policy")
-            return 0.0  # No reward for first step since we don't have previous observation
+            #return 0.0  # No reward for first step since we don't have previous observation
         
-
-
         current_obs = self.current_obs
         next_obs = env.observation_manager.compute_group("policy")
 
         self.current_obs = next_obs.clone()
         
         # Compute intrinsic reward and loss
-        with torch.cuda.amp.autocast(enabled=True):
-            intrinsic_reward, loss = self.icm.compute_intrinsic_reward(
-                current_obs, next_obs, env.action_manager.action
-            )
+
+        intrinsic_reward, loss = self.icm.compute_intrinsic_reward(
+            current_obs, next_obs, env.action_manager.action
+        )
 
         
         # Accumulate gradients and update periodically
-        self.icm.grad_accumulation_steps += 1
-        if self.icm.grad_accumulation_steps >= self.icm.max_grad_accumulation:
-            self.optimizer.zero_grad()
-            loss.mean().backward()
-            self.optimizer.step()
-            self.icm.grad_accumulation_steps = 0
+
+        self.optimizer.zero_grad()
+        loss.mean().backward()
+        self.optimizer.step()
+        self.icm.grad_accumulation_steps = 0
             
         return intrinsic_reward * env.cfg.icm.intrinsic_reward_scale
