@@ -64,10 +64,10 @@ class ICM(nn.Module):
         
     def compute_intrinsic_reward(self, obs, next_obs, actions):
         # Input validation
-        if not (obs.device == next_obs.device == actions.device == self.device):
-            raise ValueError("All tensors must be on the same device")
-        if not (obs.size(0) == next_obs.size(0) == actions.size(0)):
-            raise ValueError("Batch sizes must match")
+        # if not (obs.device == next_obs.device == actions.device == self.device):
+        #     raise ValueError("All tensors must be on the same device")
+        # if not (obs.size(0) == next_obs.size(0) == actions.size(0)):
+        #     raise ValueError("Batch sizes must match")
             
         # Encode states into features
         current_features = self.feature_encoder(obs)
@@ -77,7 +77,7 @@ class ICM(nn.Module):
         predicted_next_features = self.forward_model(current_features, actions)
         
         # Compute forward model loss (intrinsic reward)
-        forward_loss = F.mse_loss(predicted_next_features, next_features.detach(), reduction='none')
+        forward_loss = F.mse_loss(predicted_next_features, next_features, reduction='none')
         intrinsic_reward = torch.mean(forward_loss, dim=-1)
         
         # Inverse model prediction
