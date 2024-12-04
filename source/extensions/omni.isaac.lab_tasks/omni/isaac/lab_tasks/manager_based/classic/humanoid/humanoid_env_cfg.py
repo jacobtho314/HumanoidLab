@@ -20,6 +20,7 @@ from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR
 from omni.isaac.lab.assets.rigid_object.rigid_object_cfg import RigidObjectCfg
 
 import omni.isaac.lab_tasks.manager_based.classic.humanoid.mdp as mdp
+from .mdp.icm import ICM
 
 ##
 # Scene definition
@@ -324,6 +325,7 @@ class RewardsCfg:
     )
 
     ball_location = RewTerm(func=mdp.ball_location_reward, weight=10.0, params={})
+    curiosity = RewTerm(func=mdp.icm_reward, weight=1.0)
 
 
 @configclass
@@ -334,6 +336,16 @@ class TerminationsCfg:
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
     # (2) Terminate if the robot falls
     torso_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.8})
+
+@configclass
+class ICMCfg:
+    """Configuration for ICM."""
+    
+    enable = True
+    feature_dim = 256
+    beta = 0.2  # Weight between forward and inverse loss
+    intrinsic_reward_scale = 0.01
+    update_frequency = 10  # Update ICM every N steps
 
 
 @configclass
@@ -349,6 +361,7 @@ class HumanoidEnvCfg(ManagerBasedRLEnvCfg):
     rewards: RewardsCfg = RewardsCfg()
     terminations: TerminationsCfg = TerminationsCfg()
     events: EventCfg = EventCfg()
+    icm: ICMCfg = ICMCfg()
 
     def __post_init__(self):
         """Post initialization."""
