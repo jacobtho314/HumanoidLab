@@ -228,16 +228,16 @@ class icm_reward(ManagerTermBase):
         
         # Compute intrinsic reward and loss
 
-        intrinsic_reward, loss = self.icm.compute_intrinsic_reward(
-            current_obs, next_obs, env.action_manager.action
-        )
+        with torch.enable_grad():
+            intrinsic_reward, loss = self.icm.compute_intrinsic_reward(
+                current_obs, next_obs, env.action_manager.action
+            )
 
-        
-        # Accumulate gradients and update periodically
-
-        self.optimizer.zero_grad()
-        loss.mean().backward()
-        self.optimizer.step()
-        self.icm.grad_accumulation_steps = 0
             
-        return intrinsic_reward * env.cfg.icm.intrinsic_reward_scale
+            # Accumulate gradients and update periodically
+
+            self.optimizer.zero_grad()
+            loss.mean().backward()
+            self.optimizer.step()
+            
+        return intrinsic_reward.detach()
