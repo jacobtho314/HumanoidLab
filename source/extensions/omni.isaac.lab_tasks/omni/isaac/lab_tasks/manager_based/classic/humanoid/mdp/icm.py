@@ -66,41 +66,20 @@ class ICM(nn.Module):
     def compute_intrinsic_reward(self, obs, next_obs, actions):
         # Encode states into features
         current_features = self.feature_encoder(obs)
-        print("current_features.requires_grad:", current_features.requires_grad)
-
         next_features = self.feature_encoder(next_obs)
-        print("next_features.requires_grad:", next_features.requires_grad)
-
         # Forward model prediction
         predicted_next_features = self.forward_model(current_features, actions)
-        print("predicted_next_features.requires_grad:", predicted_next_features.requires_grad)
-
         # Compute forward model loss (intrinsic reward)
         forward_loss = F.mse_loss(predicted_next_features, next_features, reduction='none')
-        print("forward_loss.requires_grad:", forward_loss.requires_grad)
-
         intrinsic_reward = torch.mean(forward_loss, dim=-1)
-        print("intrinsic_reward.requires_grad:", intrinsic_reward.requires_grad)
-
         # Inverse model prediction
         predicted_actions = self.inverse_model(current_features, next_features)
-        print("predicted_actions.requires_grad:", predicted_actions.requires_grad)
-
         inverse_loss = F.mse_loss(predicted_actions, actions, reduction='none')
-        print("inverse_loss.requires_grad:", inverse_loss.requires_grad)
-
         inverse_loss = torch.mean(inverse_loss, dim=-1)
-        print("inverse_loss_mean.requires_grad:", inverse_loss.requires_grad)
-
         # Total loss for training
         total_loss = (1 - self.beta) * inverse_loss + self.beta * torch.mean(forward_loss, dim=-1)
-        print("total_loss.requires_grad:", total_loss.requires_grad)
-
         # Test gradient flow explicitly
-        try:
-            grads = torch.autograd.grad(outputs=total_loss.mean(), inputs=list(self.parameters()), retain_graph=True)
-            print("Gradient computation successful for total_loss!")
-        except RuntimeError as e:
-            print("Gradient computation failed:", e)
+        #grads = torch.autograd.grad(outputs=total_loss.mean(), inputs=list(self.parameters()), retain_graph=True)
+
 
         return intrinsic_reward, total_loss

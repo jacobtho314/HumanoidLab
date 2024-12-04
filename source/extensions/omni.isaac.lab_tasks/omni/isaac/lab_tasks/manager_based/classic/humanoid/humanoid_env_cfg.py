@@ -21,14 +21,36 @@ from omni.isaac.lab.assets.rigid_object.rigid_object_cfg import RigidObjectCfg
 
 import omni.isaac.lab_tasks.manager_based.classic.humanoid.mdp as mdp
 from .mdp.icm import ICM
+import torch
 
 ##
 # Scene definition
 ##
 
+def ball_cube_distance(env, threshold: float = 0.1) -> torch.Tensor:
+    """Check if the ball is within a threshold distance of the cube.
+    
+    Args:
+        env: The environment instance
+        threshold: The distance threshold for termination
+        
+    Returns:
+        bool: True if distance is less than threshold, False otherwise
+    """
+    # Get ball and cube positions
+    ball = env.scene["ball"]
+    cube = env.scene["cube"]
+
+    cube_xy = cube.data.root_pos_w[:, :2]
+    ball_xy = ball.data.root_pos_w[:, :2]
+    
+    # Calculate distance
+    distance = torch.norm(cube_xy - ball_xy)
+    return distance < threshold
+
 def ball_initial_pos():
     """Base location for the ball to spawn."""
-    return 1.0, 0.0, 0.4
+    return 1.0, 0.0, 0.2
 
 def target_pos_from_ball():
     """Promote movement towards the general area of the ball."""
@@ -148,7 +170,7 @@ class MySceneCfg(InteractiveSceneCfg):
         # Set initial position
         init_state=RigidObjectCfg.InitialStateCfg(
             # Initial Z should be the same as z-dim size.
-            pos=(2.0, 0.0, 0.2)
+            pos=(4.0, 0.0, 0.2)
         ),
     )
 
@@ -336,6 +358,11 @@ class TerminationsCfg:
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
     # (2) Terminate if the robot falls
     torso_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.8})
+
+    ball_at_goal = DoneTerm(
+        func=ball_cube_distance,
+        params={"threshold": 0.1}  # Adjust this threshold as needed
+    )
 
 @configclass
 class ICMCfg:

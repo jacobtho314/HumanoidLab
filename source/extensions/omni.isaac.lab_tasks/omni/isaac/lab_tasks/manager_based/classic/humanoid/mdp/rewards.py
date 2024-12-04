@@ -233,11 +233,13 @@ class icm_reward(ManagerTermBase):
                 current_obs, next_obs, env.action_manager.action
             )
 
-            
             # Accumulate gradients and update periodically
 
             self.optimizer.zero_grad()
             loss.mean().backward()
             self.optimizer.step()
+
+
+        print(intrinsic_reward)
             
         return intrinsic_reward.detach()
