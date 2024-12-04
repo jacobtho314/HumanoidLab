@@ -253,7 +253,7 @@ class EventCfg:
             # These are applied on top of the base pose.
             # TODO: test with varying pos (non-zero low - high)
             'x': (0.0, 0.0),
-            'y': (0.0, 0.0),
+            'y': (-1.0, 1.0),
             'z': (0.0, 0.0)    # Fix z position
         },
             "velocity_range": {},
@@ -323,7 +323,7 @@ class RewardsCfg:
         },
     )
 
-    ball_location = RewTerm(func=mdp.ball_location_reward, weight=10.0, params={})
+    ball_location = RewTerm(func=mdp.ball_location_reward, weight=6.0, params={})
 
 
 @configclass
