@@ -90,6 +90,24 @@ def ball_position_(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntity
     return ball.data.root_pos_w[:, :2]
 
 
+def rel_ball_position_(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("ball")) -> torch.Tensor:
+    """Returns the x,y ball position in the robot-relative frame.
+
+    Args:
+        env: The environment instance.
+        asset_cfg: Configuration for the ball entity.
+
+    Returns:
+        torch.Tensor: Ball position in robot-relative frame with shape (num_envs, 2).
+    """
+    # extract the used quantities (to enable type-hinting)
+    ball = env.scene[asset_cfg.name]
+    # get ball position in world frame
+    ball_pos = ball.data.root_pos_w[:, :2]
+    robot_pos = env.scene["robot"].data.root_pos_w[:, :2]
+    return ball_pos - robot_pos
+
+
 def cube_position_(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("cube")) -> torch.Tensor:
     """Returns the x,y cube position in the simulation world frame.
 
@@ -104,3 +122,21 @@ def cube_position_(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntity
     cube = env.scene[asset_cfg.name]
     # get cube position in world frame
     return cube.data.root_pos_w[:, :2]
+
+
+def rel_cube_position_(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("cube")) -> torch.Tensor:
+    """Returns the x,y cube position in the robot-relative world frame.
+
+    Args:
+        env: The environment instance.
+        asset_cfg: Configuration for the ball entity.
+
+    Returns:
+        torch.Tensor: Cube position in robot-relative frame with shape (num_envs, 2).
+    """
+    # extract the used quantities (to enable type-hinting)
+    cube = env.scene[asset_cfg.name]
+    # get cube position in world frame
+    cube_pos = cube.data.root_pos_w[:, :2]
+    robot_pos = env.scene["robot"].data.root_pos_w[:, :2]
+    return cube_pos - robot_pos
